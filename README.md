@@ -1,5 +1,11 @@
 # Baseline Predictive Pipeline -- ETAI
 
+```
+Name: Joana Geraldes
+Student Number: 20231700
+```
+
+
 This is the **starting point** for your semester project: a small but *complete* predictive pipeline -- every piece a real project needs (entry point, config, data loading, preprocessing, model, evaluation), just kept as simple as possible for now.
 
 The task: predict two-year recidivism using ProPublica's COMPAS
@@ -111,3 +117,14 @@ You're free to improve on this structure or restructure it entirely -- what matt
 ## Dataset
 
 See `data/README.md`.
+
+## Results Analysis
+
+**Week 2 (16/09) - Decision Tree vs Logistic Regression**
+
+Logistic Regression (f1-score) -> 68 % <br>
+Decision Tree (f1-score) -> 67%
+
+Therefore, Logistic Regression is a slightly better model for this problem
+
+
