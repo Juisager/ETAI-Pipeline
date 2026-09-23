@@ -5,6 +5,7 @@ Name: Joana Geraldes
 Student Number: 20231700
 ```
 
+Link to Professor's Repo: https://github.com/sofiacper/ETAI-Pipeline/tree/main
 
 This is the **starting point** for your semester project: a small but *complete* predictive pipeline -- every piece a real project needs (entry point, config, data loading, preprocessing, model, evaluation), just kept as simple as possible for now.
 
@@ -33,6 +34,9 @@ go on.
 └── data/
     ├── compas_two_year_recidivism.csv
     └── README.md            # problem description + full data dictionary
+└── notebooks
+    ├── Notebooks.ipynb      # Notebooks from the classes
+    └── Results/             # Created at the end of the notebook to store the week's results
 ```
 
 ## Pipeline progress
@@ -42,17 +46,31 @@ This table is updated after each practical class, so you can always see what cha
 | Week | Practical class focus | Added to the pipeline |
 |------|------------------------|------------------------|
 | 2 | Introduction & baseline pipeline | Initial version: project structure, a single naive train/test split (no cross-validation), minimal preprocessing (drop rows with missing values, one-hot encode categoricals), logistic regression baseline, a first (deliberately simple) fairness check comparing our model's and COMPAS's own false-positive rate by race, train-vs-test accuracy reporting (to start spotting overfitting), and each run's full report saved automatically to `results/` |
+| 3 | EDA + preprocessing -- diagnose the data, then fix it | `src/data_diagnostics.py` (missingness-mechanism test via chi-square + Cramér's V, domain-rule invalid-value detection, two-way duplicate check) and `src/preprocessing.py` (leak-safe category cleanup, mechanism-matched imputation with `_was_missing` indicators for MNAR columns, a deployable `ColumnTransformer`, **and** the train/test split itself, all in the one file rather than split across two) replace the old naive `dropna()`/`pd.get_dummies()` preprocessing; encoder/scaler pair (count encoding + robust scaling) chosen by an empirical grid over 15 repeated splits, checked against the runner-up with a paired comparison so the win isn't just noise; three redundant columns (found via correlation + VIF) dropped; `config.yaml` gains `diagnostics` and `preprocessing` sections -- see "Preprocessing decisions" below.  |
+
+## Preprocessing decisions
+
+*(New this week -- written straight from the diagnosis in `Practical/W3/notebooks/01_eda_introduction.ipynb` and the empirical grid in `02_preprocessing.ipynb`. Full walkthrough lives in those two notebooks; this is the summary.)*
+
+| Column(s) | Issue found | Mechanism | What was done |
+|---|---|---|---|
+| `age` | 2.0% missing | MCAR | median impute, no indicator needed |
+| `juv_fel_count` | 3.0% missing | MCAR | median impute, no indicator needed |
+| `priors_count` | ~7% missing (incl. placeholder tokens) | MNAR -- tied to `age_cat` | median impute + `priors_count_was_missing` flag |
+| `c_charge_degree` | 3.2% missing | MNAR -- tied to `age_cat` | mode impute + `c_charge_degree_was_missing` flag |
+| `race` | ~1% missing (placeholder tokens) | MCAR | mode impute, no indicator (excluded from model features anyway) |
+| `sex` | ~1.5% missing (incl. placeholder tokens) | MCAR | mode impute, no indicator needed |
+| `age`, `decile_score`, `juv_fel_count`, `priors_count` | invalid values (out-of-range or negative) | domain rule | converted to `NaN` before imputation |
+| `sex` / `race` / `c_charge_degree` / `score_text` | inconsistent category spelling (casing, whitespace, abbreviations) | data entry | canonicalized to one spelling per category |
+| whole rows | 72 exact-duplicate rows, all sharing a repeated `id` | data entry | dropped, kept first occurrence |
+| `prior_offenses`, `age_in_months`, `juvenile_total` | redundant with other columns (correlation r=1.00, or -- for `juvenile_total` -- an exact sum caught only by VIF) | multicollinearity | dropped |
+
+**Encoder/scaler pair:** chosen empirically -- 4 encoders (one-hot, ordinal, count, target) × 4 scalers (none, standard, min-max, robust), scored by mean accuracy across 15 repeated train/test splits with logistic regression. **Target encoding + standard scaling won**, though a paired comparison against the runner-up (same 15 splits, per-split difference) showed the margin was within noise -- see `02_preprocessing.ipynb`'s grid + paired-comparison cells for the full table and the check itself.
+
 
 ## Environment setup
 
 You only need to do this once per machine.
-
-### macOS / Linux
-```bash
-python3 -m venv venv                 # creates an isolated Python environment in a folder called "venv"
-source venv/bin/activate             # activates it -- packages install here, not system-wide, and stay out of your other projects
-pip install -r requirements.txt      # installs the exact packages this project needs, into that environment
-```
 
 ### Windows -- PowerShell
 ```powershell
@@ -78,12 +96,6 @@ Once the environment is active you'll see `(venv)` at the start of your prompt. 
 ### Every time after the first
 
 Creating the environment and installing packages only needs to happen once, ever. Every other time you sit down to work -- a new terminal window, the next practical class, tomorrow -- you don't repeat any of the steps above. From the project's root folder, you just need to:
-
-**macOS / Linux**
-```bash
-source venv/bin/activate
-python main.py
-```
 
 **Windows**
 ```powershell
