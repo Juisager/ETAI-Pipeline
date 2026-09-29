@@ -139,4 +139,8 @@ Decision Tree (f1-score) -> 67%
 
 Therefore, Logistic Regression is a slightly better model for this problem
 
+**Week 3 (23/09) - Data Cleaning**
+
+Logistic Regression (f1-score) -> 66 % <br>
+Decision Tree (f1-score) -> 65 %
 
