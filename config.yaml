@@ -5,15 +5,9 @@ data:
   path: "data/compas_two_year_recidivism.csv"
   target: "two_year_recid"
   sensitive_attr: "race"          # excluded from model features, used only to audit fairness
-<<<<<<< HEAD
-  # id/COMPAS's-own-score dropped as before, plus the three columns week 3's multicollinearity
-  # check found redundant (see src/data_diagnostics.py + the EDA notebook's VIF walkthrough)
-  drop_columns: ["id", "decile_score", "score_text", "prior_offenses", "age_in_months", "juvenile_total"]
-=======
   # kept in the data but never used as model features: the row id and COMPAS's own score
   # (the redundant columns are removed earlier, by clean_dataset() -- see diagnostics.redundant_columns)
   drop_columns: ["id", "decile_score", "score_text"]
->>>>>>> upstream/main
 
 # Week 4: the FINAL TEST SET. Carved out once, stratified, and locked: never used to fit,
 # tune, compare or choose anything. Used only for the final assessment.
@@ -23,17 +17,6 @@ test_set:
   size: 0.2
   random_state: 42
 
-<<<<<<< HEAD
-# New this week (see Practical/W3/notebooks/01_eda_introduction.ipynb): what src/data_diagnostics.py
-# and src/preprocessing.py need to stay generic instead of hardcoding COMPAS's column names.
-diagnostics:
-  id_column: "id"
-  candidate_predictors: ["sex", "race", "age_cat", "c_charge_degree", "score_text"]
-  # columns that load as text purely because a placeholder token (see placeholder_tokens below)
-  # shows up somewhere in them
-  numeric_text_columns: ["priors_count", "prior_offenses"]
-  placeholder_tokens: ["-", "?", "n/a", "N/A", "na", "NA", ""]
-=======
 # Week 4: how models are evaluated -- stratified k-fold cross-validation on the
 # development set (everything except the locked test set). Same random_state = same folds on
 # every run, for every model, so comparisons are like-for-like.
@@ -55,7 +38,6 @@ diagnostics:
   # "nan"; its last step turns every token listed here into NaN, so listing "nan" turns those back into gaps.
   # Safe: read_csv already reads a literal "nan" in the file as missing, so any "nan" string was created by the cleanup.
   placeholder_tokens: ["-", "?", "n/a", "N/A", "na", "NA", "", "nan"]
->>>>>>> upstream/main
   validity_rules:
     age: {min: 18, max: 100}
     decile_score: {min: 1, max: 10}
@@ -109,18 +91,18 @@ preprocessing:
 model:
   # one of: "dummy" (majority-class floor), "logistic_regression", "decision_tree", "random_forest"
   # (random forest: sensible defaults, untuned -- see the example below)
-  type: "logistic_regression"
+  type: "random_forest"
   params:
     # bumped from 1000 -- with this week's encoder/scaler pair in place, 1000 iterations
     # was cutting lbfgs off before it converged (a ConvergenceWarning, not a real problem,
     # but worth just giving it enough room rather than living with the warning)
-    max_iter: 2000
+    #max_iter: 2000
   # Random Forest example -- swap the two lines above for these to run it:
   # type: "random_forest"
   # params:
-  #   n_estimators: 300
-  #   random_state: 42   # forests are random (bootstrap rows + random feature subsets): fix the seed
-  #   n_jobs: -1         # use every CPU core -- the trees are independent, so they train in parallel
+    n_estimators: 300
+    random_state: 42   # forests are random (bootstrap rows + random feature subsets): fix the seed
+    n_jobs: -1         # use every CPU core -- the trees are independent, so they train in parallel
 
 output:
   results_dir: "results"   # each run's full report is saved here as a timestamped .txt file

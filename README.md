@@ -176,3 +176,8 @@ Therefore, Logistic Regression is a slightly better model for this problem
 Logistic Regression (f1-score) -> 66 % <br>
 Decision Tree (f1-score) -> 65 %
 
+**Week 4 (30/09) - Data Preprocessing**
+
+Logistic Regression (f1-score) -> 67 % <br>
+Decision Tree (f1-score) -> 67 % <br>
+Random Forest (f1-score) -> 65 % 
