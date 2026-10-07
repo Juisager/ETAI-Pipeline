@@ -61,7 +61,7 @@ preprocessing:
     categorical_strategy: "most_frequent"
 
 model:
-  type: "decision_tree"                             # dummy | logistic_regression | decision_tree | random_forest
+  type: "logistic_regression"                     # dummy | logistic_regression | decision_tree | random_forest
   params:
     random_state: 42
 
@@ -76,6 +76,17 @@ tuning:
       model__max_depth: {type: int, low: 1, high: 20}
       model__min_samples_leaf: {type: int, low: 1, high: 200, log: true}
       model__criterion: {type: categorical, choices: ["gini", "entropy"]}
+
+    logistic_regression:
+      model__C: {type: float, low: 0.001, high: 100, log: true}
+      model__solver: {type: categorical, choices: ["lbfgs", "liblinear", "saga"]}
+      model__class_weight: {type: categorical, choices: [null, "balanced"]}
+    
+    random_forest:
+      model__n_estimators: {type: int, low: 50, high: 200}
+      model__max_depth: {type: categorical, choices: [null, 5, 10, 15, 20, 25]}
+      model__min_samples_leaf: {type: int, low: 1, high: 100, log: true}
+      model__max_features: {type: categorical, choices: ["sqrt", "log2", 0.5, 1.0]}
 
 output:
   results_dir: "results"
