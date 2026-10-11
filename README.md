@@ -180,10 +180,12 @@ See `data/README.md`.
 
 ### Week 2 (16/09) - Decision Tree vs Logistic Regression
 
-Logistic Regression (f1-score) -> 68 % <br>
-Decision Tree (f1-score) -> 67%
+| Model | Train accuracy | Test accuracy | Train–test gap |
+|---|---:|---:|---:|
+| Logistic Regression | 0.680 | **0.678** | +0.002 |
+| Decision Tree | 0.680 | 0.668 | +0.012 |
 
-Therefore, Logistic Regression is a slightly better model for this problem
+**Best model: Logistic Regression.** It achieved the highest test accuracy (0.678) and had the smallest train–test gap (+0.002), suggesting consistent performance between the training and test sets. Decision Tree achieved a test accuracy of 0.668, with a slightly larger gap of +0.012. However, the difference in test accuracy is only 0.010, so a single train/test split is not sufficient to conclude that Logistic Regression will consistently outperform Decision Tree.
 
 ###  Week 3 (23/09) - Data Cleaning
 
