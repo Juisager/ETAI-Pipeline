@@ -178,46 +178,6 @@ See `data/README.md`.
 
 ## Results Analysis
 
-### Week 2 (16/09) - Decision Tree vs Logistic Regression
+For a detailed overview of the experiments, model comparisons, cross-validation results, and fairness evaluation, see [Results and Analysis](RESULTS.md).
 
-| Model | Train accuracy | Test accuracy | Train–test gap |
-|---|---:|---:|---:|
-| Logistic Regression | 0.680 | **0.678** | +0.002 |
-| Decision Tree | 0.680 | 0.668 | +0.012 |
-
-**Best model: Logistic Regression.** It achieved the highest test accuracy (0.678) and had the smallest train–test gap (+0.002), suggesting consistent performance between the training and test sets. Decision Tree achieved a test accuracy of 0.668, with a slightly larger gap of +0.012. However, the difference in test accuracy is only 0.010, so a single train/test split is not sufficient to conclude that Logistic Regression will consistently outperform Decision Tree.
-
-###  Week 3 (23/09) - Data Cleaning
-
-Logistic Regression (f1-score) -> 66 % <br>
-Decision Tree (f1-score) -> 65 %
-
-### Week 4 (30/09) - Data Preprocessing
-
-Logistic Regression (f1-score) -> 67 % <br>
-Decision Tree (f1-score) -> 67 % <br>
-Random Forest (f1-score) -> 65 % 
-
-### Week 5 (07/10) - Hyperparameter Tuning
-
-
-| Model | Default: CV mean ± std | Tuned: nested CV mean ± std | Tuning score (best trial) | Optimism | Chosen hyperparameters |
-|---|---|---|---|---|---|
-| Decision tree | 0.695 ± 0.014 | 0.672 ± 0.017 | 0.679 | +0.002 | max_depth=6, min_samples_leaf=101, criterion=gini |
-| Logistic regression | 0.672 ± 0.013 | 0.676 ± 0.014 | 0.677 | +0.003 | C=0.0746, solver=lbfgs, class_weight=None |
-| Random forest | 0.647 ± 0.016 | 0.679 ± 0.016 | 0.682 | +0.004 | n_estimators=140, max_depth=25, min_samples_leaf=45, max_features=0.5 |
-
-**Best Model**
-
-Random Forest is the best-performing model after hyperparameter tuning, achieving a nested cross-validation accuracy of 0.679 ± 0.016. Tuning produced a substantial improvement compared with its default performance of 0.647 ± 0.016, corresponding to a gain of 0.032. The selected hyperparameters were 140 trees, a maximum depth of 25, a minimum of 45 samples per leaf, and max_features=0.5. 
-
-**Questions**
-
-*Which models gained from tuning, and is the gain larger than the fold-to-fold std?*
-
-Logistic Regression and Random Forest benefited from tuning, while Decision Tree decreased in performance. The improvement for Logistic Regression was only 0.004, which is smaller than its fold-to-fold standard deviation (0.014). Random Forest improved by 0.032, which is larger than its standard deviation (0.016), indicating a more substantial improvement. Decision Tree decreased by 0.023, which is also larger than its standard deviation (0.017).
-
-
-*Did tuning change which model is best? Which number would you report for your best model, and why?*
-
-Yes. Before tuning, Decision Tree had the highest validation accuracy (0.695), while after tuning, Random Forest became the best model with a nested CV accuracy of 0.679 ± 0.016. I would report 0.679 ± 0.016 for Random Forest because it is the honest estimate obtained from the outer folds of nested cross-validation, rather than the Optuna best-trial score (0.682), which is optimistic because it was used to select the hyperparameters.
+This document tracks the project's progress across different weeks and discusses model performance, generalisation, and the main findings from each experiment.
