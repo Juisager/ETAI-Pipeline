@@ -160,10 +160,10 @@ def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     out["priors_per_adult_year"] = out["priors_count"] / (out["age"] - 17).clip(lower=1)   # NaN stays NaN -> imputed later
 
-    out["has_juv_offense"] = (0 if out["juvenile_total"] == 0 else 1).astype(int)   # NaN stays NaN -> imputed later
+    out["has_juv_offense"] = (0 if (out["juv_fel_count"] + out["juv_misd_count"] + out["juv_other_count"]) == 0 else 1).astype(int)   # NaN stays NaN -> imputed later
 
     out["has_adult_offense"] = (0 if out["adult_total"] == 0 else 1).astype(int)   # NaN stays NaN -> imputed later
 
-    out["adult_prior_share"] = out["adult_total"] / (out["priors_count"] + out["juvenile_total"]).clip(lower=1)   # NaN stays NaN -> imputed later
+    out["adult_prior_share"] = out["adult_total"] / (out["priors_count"] + out["juv_fel_count"] + out["juv_misd_count"] + out["juv_other_count"]).clip(lower=1)   # NaN stays NaN -> imputed later
 
     return out
