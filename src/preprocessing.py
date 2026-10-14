@@ -153,3 +153,17 @@ def split_dev_test(X, y, extras, test_size: float, random_state: int):
     extras_test, row-aligned.
     """
     return train_test_split(X, y, extras, test_size=test_size, random_state=random_state, stratify=y)
+
+
+def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
+    # EXAMPLE (Challenge 1). Fixed formulas only -- nothing is learned, so this is safe before the split.
+    out = df.copy()
+    out["priors_per_adult_year"] = out["priors_count"] / (out["age"] - 17).clip(lower=1)   # NaN stays NaN -> imputed later
+
+    out["has_juv_offense"] = (0 if out["juvenile_total"] == 0 else 1).astype(int)   # NaN stays NaN -> imputed later
+
+    out["has_adult_offense"] = (0 if out["adult_total"] == 0 else 1).astype(int)   # NaN stays NaN -> imputed later
+
+    out["adult_prior_share"] = out["adult_total"] / (out["priors_count"] + out["juvenile_total"]).clip(lower=1)   # NaN stays NaN -> imputed later
+
+    return out

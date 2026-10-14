@@ -17,6 +17,29 @@ It has some **deliberately weak spots**. Part of your work this
 semester is finding them and making them better -- see the pipeline progress table below, which tracks what changes and why as the weeks
 go on.
 
+## Data dictionary
+
+One row = one defendant, with their demographics and criminal history at the time of screening, COMPAS's own risk score for them, and whether they were actually rearrested within two years.
+
+| column | type | description | notable values |
+|--------|------|--------------|------------------|
+| `id` | identifier | internal record id | not a model feature |
+| `sex` | categorical | defendant's sex | `Male`, `Female` |
+| `age` | numeric | defendant's age (years) at screening | |
+| `age_cat` | categorical | age bucket | `Less than 25`, `25 - 45`, `Greater than 45` |
+| `race` | categorical | defendant's race, as recorded | excluded from model features- kept aside only to audit fairness afterward |
+| `juv_fel_count` | numeric | number of prior juvenile felony offenses | |
+| `juv_misd_count` | numeric | number of prior juvenile misdemeanor offenses | |
+| `juv_other_count` | numeric | number of other prior juvenile offenses | |
+| `juvenile_total` | numeric | total juvenile offenses | |
+| `priors_count` | numeric | number of prior adult offenses | |
+| `prior_offenses` | numeric | number of prior offenses | |
+| `age_in_months` | numeric | age expressed in months |  |
+| `c_charge_degree` | categorical | degree of the current charge | `F` (felony), `M` (misdemeanor) |
+| `decile_score` | numeric | COMPAS's own risk score | 1 (lowest) to 10 (highest); excluded from model features, used only for comparison |
+| `score_text` | categorical | COMPAS's own risk category | `Low`, `Medium`, `High`; excluded from model features |
+| `two_year_recid` | binary | **our target** - was this person rearrested within two years? | `0` = no, `1` = yes |
+
 ## Project structure
 
 ```
