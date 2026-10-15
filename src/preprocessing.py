@@ -158,12 +158,21 @@ def split_dev_test(X, y, extras, test_size: float, random_state: int):
 def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
     # EXAMPLE (Challenge 1). Fixed formulas only -- nothing is learned, so this is safe before the split.
     out = df.copy()
+    juvenile_cols = [
+    "juv_fel_count",
+    "juv_misd_count",
+    "juv_other_count",
+    ]
+
+    has_positive = out[juvenile_cols].gt(0).any(axis=1)
+    has_missing = out[juvenile_cols].isna().any(axis=1)
+
+    out["has_juv_offense"] = np.where(has_positive, 1, np.where(has_missing, np.nan, 0))
+
     out["priors_per_adult_year"] = out["priors_count"] / (out["age"] - 17).clip(lower=1)   # NaN stays NaN -> imputed later
 
-    out["has_juv_offense"] = (0 if (out["juv_fel_count"] + out["juv_misd_count"] + out["juv_other_count"]) == 0 else 1).astype(int)   # NaN stays NaN -> imputed later
+    out["has_adult_offense"] = np.where(out["priors_count"] > 0, 1, np.where(out["priors_count"].isna(), np.nan, 0))
 
-    out["has_adult_offense"] = (0 if out["adult_total"] == 0 else 1).astype(int)   # NaN stays NaN -> imputed later
-
-    out["adult_prior_share"] = out["adult_total"] / (out["priors_count"] + out["juv_fel_count"] + out["juv_misd_count"] + out["juv_other_count"]).clip(lower=1)   # NaN stays NaN -> imputed later
+    out["adult_prior_share"] = out["priors_count"] / (out["priors_count"] + out["juv_fel_count"] + out["juv_misd_count"] + out["juv_other_count"]).clip(lower=1)   # NaN stays NaN -> imputed later
 
     return out

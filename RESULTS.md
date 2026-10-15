@@ -62,4 +62,12 @@ Logistic Regression and Random Forest benefited from tuning, while Decision Tree
 
 Yes. Before tuning, Decision Tree had the highest validation accuracy (0.695), while after tuning, Random Forest became the best model with a nested CV accuracy of 0.679 ± 0.016. I would report 0.679 ± 0.016 for Random Forest because it is the honest estimate obtained from the outer folds of nested cross-validation, rather than the Optuna best-trial score (0.682), which is optimistic because it was used to select the hyperparameters.
 
+### Week 6 (14/10) - Emsembles + Feature Engineering
 
+| Model | Default: CV mean ± std (gap) | Tuned: nested CV mean ± std (gap) | Tuning score (best trial) | Chosen hyperparameters |
+|---|---|---|---|---|
+| Logistic regression | ... | — | — | — |
+| Decision tree | ... | ... | ... | ... |
+| Random forest | 0.644 ± 0.018 (+0.088) | 0.676 ± 0.011 (+0.013) | 0.681 | `n_estimators=183, max_depth=25, min_samples_leaf=28, max_features=0.5` |
+| Oblique random forest | ... | ... | ... | ... |
+| AdaBoost | ... | ... | ... | ... |
