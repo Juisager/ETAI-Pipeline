@@ -70,4 +70,21 @@ Yes. Before tuning, Decision Tree had the highest validation accuracy (0.695), w
 | Decision tree | 0.605 ± 0.013 (+0.094) | 0.670 ± 0.006 (+0.010) | 0.679 | `max_depth=17, min_samples_leaf=95, criterion='gini'` |
 | Random forest | 0.644 ± 0.018 (+0.088) | 0.676 ± 0.011 (+0.013) | 0.681 | `n_estimators=183, max_depth=25, min_samples_leaf=28, max_features=0.5` |
 | Oblique random forest | 0.645 ± 0.012 (+0.119) | 0.679 ± 0.012 (+0.014) | 0.682 | `tree__max_depth=5, tree__min_samples_leaf=8, project__n_components=8` |
-| AdaBoost | ... | ... | ... | ... |
+| AdaBoost | 0.675 ± 0.011 (+0.006) | 0.681 ± 0.014 (+0.007) | 0.684 | `estimator__max_depth=6, n_estimators=68, learning_rate=0.1715` |
+
+**Best model**
+
+**AdaBoost** is the best-performing model based on nested cross-validation, achieving a mean accuracy of 68.1% ± 1.4%. It slightly outperforms the oblique random forest (67.9%), Logistic Regression (67.7%), Decision Tree (67.0%), and Random Forest (67.6%). Its train–validation gap of 0.007 indicates good generalisation, with little evidence of overfitting.
+
+
+1. Which model would you choose, and is its lead bigger than the fold-to-fold std?
+
+I would choose AdaBoost. Its lead over the oblique random forest is only 0.2 percentage points, much smaller than either model's standard deviation. Therefore, the difference is not large enough to establish a clear winner.
+
+2. Do the chosen hyperparameters match how each model works?
+
+Yes, the hyperparameters are generally consistent with each model's characteristics. AdaBoost uses trees of depth 6, 68 estimators, and a learning rate of 0.1715, combining moderately complex trees with gradual learning. The other models also use regularisation or tree constraints to balance model complexity and generalisation.
+
+3. Which model and which number would you report?
+
+I would report AdaBoost with a nested CV accuracy of 68.1% ± 1.4%. Nested cross-validation provides a more reliable estimate than the best Optuna trial score of 68.4%, which may be optimistic. 
