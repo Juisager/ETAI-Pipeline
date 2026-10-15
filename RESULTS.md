@@ -66,8 +66,8 @@ Yes. Before tuning, Decision Tree had the highest validation accuracy (0.695), w
 
 | Model | Default: CV mean ± std (gap) | Tuned: nested CV mean ± std (gap) | Tuning score (best trial) | Chosen hyperparameters |
 |---|---|---|---|---|
-| Logistic regression | ... | — | — | — |
-| Decision tree | ... | ... | ... | ... |
+| Logistic regression | 0.673 ± 0.015 (+0.002) | 0.677 ± 0.013 (+0.001) | 0.681 | `C=0.00534, solver='liblinear', class_weight=None` |
+| Decision tree | 0.605 ± 0.013 (+0.094) | 0.670 ± 0.006 (+0.010) | 0.679 | `max_depth=17, min_samples_leaf=95, criterion='gini'` |
 | Random forest | 0.644 ± 0.018 (+0.088) | 0.676 ± 0.011 (+0.013) | 0.681 | `n_estimators=183, max_depth=25, min_samples_leaf=28, max_features=0.5` |
 | Oblique random forest | ... | ... | ... | ... |
 | AdaBoost | ... | ... | ... | ... |
