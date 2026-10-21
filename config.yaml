@@ -15,7 +15,7 @@ cv:
   random_state: 42
   # Reported for every run. fbeta_<beta> weights recall beta times as much as precision.
   metrics: ["accuracy", "balanced_accuracy", "precision", "recall", "f1", "fbeta_2", "roc_auc", "average_precision"]
-  selection_metric: "roc_auc"                       # one of metrics: what tuning maximises and runs are ranked by
+  selection_metric: "f1"                       # one of metrics: what tuning maximises and runs are ranked by
   n_jobs: 1                                         # -1 = all CPU cores
 
 diagnostics:
@@ -63,9 +63,9 @@ preprocessing:
     categorical_strategy: "most_frequent"
 
 model:
-  type: "naive_bayes"  # dummy | logistic_regression | naive_bayes | decision_tree | random_forest | oblique_random_forest | adaboost | gradient_boosting | hist_gradient_boosting
+  type: "logistic_regression"  # dummy | logistic_regression | naive_bayes | decision_tree | random_forest | oblique_random_forest | adaboost | gradient_boosting | hist_gradient_boosting
   params:
-    {}
+    {max_iter: 2000, class_weight: balanced}
   # Other models' params, to swap in. class_weight "balanced" weights each class by 1 / its frequency
   # (GradientBoostingClassifier and GaussianNB have no class_weight).
   # logistic_regression:    {max_iter: 2000, class_weight: balanced}
@@ -114,6 +114,9 @@ tuning:
       model__l2_regularization: {type: float, low: 0.000001, high: 10.0, log: true}
     naive_bayes:
       model__var_smoothing: {type: float, low: 0.000000000001, high: 0.1, log: true}
+    logistic_regression:
+      model__C: {type: float, low: 0.0001, high: 100.0, log: true}
+      model__solver: {type: categorical, choices: ["newton-cg", "lbfgs", "liblinear", "sag", "saga"]}
 
 output:
   results_dir: "results"
