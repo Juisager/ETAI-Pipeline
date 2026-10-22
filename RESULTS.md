@@ -88,3 +88,20 @@ Yes, the hyperparameters are generally consistent with each model's characterist
 3. Which model and which number would you report?
 
 I would report AdaBoost with a nested CV accuracy of 68.1% ± 1.4%. Nested cross-validation provides a more reliable estimate than the best Optuna trial score of 68.4%, which may be optimistic. 
+
+## Week 7 (21/10) - Gradient Boosting + Metrics
+
+| Model | Default: CV F1 mean ± std (gap) | Tuned: nested CV F1 mean ± std | Tuning score (best trial) | Chosen hyperparameters |
+|---|---|---|---|---|
+| Hist. Gradient Boosting | 0.626 ± 0.020 (+0.043) | 0.641 ± 0.017 | 0.644 | `max_iter=133, learning_rate=0.2013, max_leaf_nodes=2, min_samples_leaf=165, l2_regularization=8.234e-05` |
+| Random Forest | 0.603 ± 0.008 (+0.097) | 0.640 ± 0.017 | 0.644 | `max_depth=6, min_samples_leaf=1, max_features='sqrt'` |
+| Logistic Regression | 0.634 ± 0.013 (-0.001) | 0.637 ± 0.010 | 0.638 | `C=0.006725, solver='lbfgs'` |
+| Decision Tree | 0.562 ± 0.014 (+0.101) | 0.637 ± 0.013 | 0.634 | `max_depth=2, min_samples_leaf=148, criterion='gini'` |
+| Gradient Boosting | 0.610 ± 0.018 (+0.017) | 0.621 ± 0.017 | 0.625 | `n_estimators=327, learning_rate=0.3976, max_depth=1, min_samples_leaf=200, subsample=0.9351` |
+| Oblique Random Forest | 0.591 ± 0.009 (+0.132) | 0.617 ± 0.009 | 0.619 | `tree__max_depth=8, tree__min_samples_leaf=73, project__n_components=9` |
+| AdaBoost | 0.605 ± 0.019 (+0.007) | 0.615 ± 0.012 | 0.618 | `estimator__max_depth=7, n_estimators=130, learning_rate=0.268` |
+| Naive Bayes | 0.434 ± 0.016 (-0.002) | 0.435 ± 0.014 | 0.435 | `var_smoothing=0.00091749` |
+
+**Best model**
+
+I would choose **Hist. Gradient Boosting**, as it achieved the highest nested CV F1 score (0.641 ± 0.017), indicating the best overall balance between precision and recall among the tested models. However, Random Forest (0.640 ± 0.017) and Logistic Regression (0.637 ± 0.010) performed very similarly, so the differences are small; I would validate the final choice on the locked test set before drawing a definitive conclusion.
