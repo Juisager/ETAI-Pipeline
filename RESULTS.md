@@ -105,3 +105,32 @@ I would report AdaBoost with a nested CV accuracy of 68.1% ± 1.4%. Nested cross
 **Best model**
 
 I would choose **Hist. Gradient Boosting**, as it achieved the highest nested CV F1 score (0.641 ± 0.017), indicating the best overall balance between precision and recall among the tested models. However, Random Forest (0.640 ± 0.017) and Logistic Regression (0.637 ± 0.010) performed very similarly, so the differences are small; I would validate the final choice on the locked test set before drawing a definitive conclusion.
+
+
+
+## Week 8 (04/11) - XGBoost + Feature Selection
+
+| Model | Default: CV F1 mean ± std (gap) | Tuned: nested CV F1 mean ± std | Tuning score (best trial) | Chosen hyperparameters |
+|---|---|---|---|---|
+| Logistic Regression | 0.635 ± 0.009 (+0.004) | **0.642 ± 0.009** | 0.642 | `C=0.07459, min_votes=3` |
+| Naive Bayes | 0.520 ± 0.096 (+0.012) | 0.636 ± 0.010 | 0.636 | `var_smoothing=5.202e-11, min_votes=1` |
+| Hist. Gradient Boosting | 0.615 ± 0.021 (+0.032) | 0.637 ± 0.014 | 0.637 | `max_iter=302, learning_rate=0.02295, max_leaf_nodes=3, min_samples_leaf=9, l2_regularization=0.000135, min_votes=2` |
+| Decision Tree | 0.579 ± 0.031 (+0.079) | 0.634 ± 0.018 | 0.634 | `max_depth=8, min_samples_leaf=149, criterion='gini', min_votes=1` |
+| Random Forest | 0.583 ± 0.032 (+0.074) | 0.629 ± 0.019 | 0.634 | `max_depth=12, min_samples_leaf=149, max_features='sqrt', min_votes=1` |
+| Oblique Random Forest | 0.564 ± 0.034 (+0.080) | 0.615 ± 0.007 | 0.615 | `tree__max_depth=12, tree__min_samples_leaf=149, project__n_components=8, min_votes=2` |
+| XGBoost | 0.603 ± 0.017 (+0.017) | 0.613 ± 0.014 | 0.613 | `n_estimators=126, learning_rate=0.2537, max_depth=6, min_child_weight=10.402, subsample=0.578, colsample_bytree=0.578, reg_lambda=0.01494, reg_alpha=2.915, gamma=3.006, min_votes=3` |
+| AdaBoost | 0.598 ± 0.018 (+0.009) | 0.611 ± 0.020 | 0.611 | `estimator__max_depth=3, n_estimators=106, learning_rate=0.07310, min_votes=1` |
+| Gradient Boosting | 0.602 ± 0.012 (+0.011) | 0.608 ± 0.015 | 0.608 | `n_estimators=302, learning_rate=0.02295, max_depth=2, min_samples_leaf=2, subsample=0.6521, min_votes=2` |
+
+
+| Model | Feature Selection | Nested CV F1 mean ± std | Precision | Recall | F2 | ROC-AUC | Average Precision |
+|---|---|---:|---:|---:|---:|---:|---:|
+| XGBoost | Enabled (`min_votes=3`) | 0.613 ± 0.014 | 0.677 | 0.562 | 0.581 | 0.724 | 0.688 |
+| XGBoost | Disabled | **0.622 ± 0.014** | 0.664 | **0.586** | **0.600** | **0.726** | **0.689** |
+
+**Best Model** 
+
+The **Logistic Regression** model achieved the best overall performance, with a nested cross-validation F1-score of 0.642 ± 0.009. It also showed very consistent results across folds, with a low standard deviation of 0.009. Using Optuna, the model was tuned with a regularization parameter of C=0.07459 and min_votes=3. Its balanced performance, stability, and relatively simple structure make it the strongest candidate among the evaluated models.
+
+**Is Feature Selection Worth It?**
+
