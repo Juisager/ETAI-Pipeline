@@ -134,3 +134,4 @@ The **Logistic Regression** model achieved the best overall performance, with a 
 
 **Is Feature Selection Worth It?**
 
+The two tuned XGBoost runs achieved similar performance: feature selection (min_votes=3) obtained an F1-score of 0.613 ± 0.014, compared with 0.622 ± 0.014 without feature selection. The corrected paired test found no statistically significant difference (\(t=-1.554\), \(p=0.195\)), despite the model without feature selection performing better in all five folds. Therefore, the smaller model can be considered statistically comparable to the model without selection. I would keep feature selection enabled, as it reduces the number of features while maintaining comparable predictive performance, resulting in a simpler and potentially more efficient model.
