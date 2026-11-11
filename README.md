@@ -339,6 +339,10 @@ Feature selection was implemented through `VoteSelector`, which combines the fea
 
 numeric__age, numeric__education_num, numeric__capital_gain, numeric__capital_loss, numeric__hours_per_week, categorical__marital_status, categorical__occupation, categorical__relationship
 
+
+The feature selection process retained only 8 of the original 38 features. Notably, none of the anonymised `v` columns were selected, suggesting that the other features provided more useful predictive information for the model.
+
+
 ### Predictions on Unlabelled Data
 
 After evaluating the selected configuration, the pipeline was refitted using all 6,000 labelled Adult observations. It was then applied to `adult_new.csv`, which contains 2,000 unlabelled records.
