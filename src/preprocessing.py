@@ -54,17 +54,33 @@ def clean_dataset(df: pd.DataFrame, diagnostics_config: dict) -> pd.DataFrame:
     violations become NaN, category spellings are canonicalized and redundant columns are
     dropped. Row-preserving and target-agnostic, so it runs unchanged on data to predict.
     """
+
     out = df.copy()
     placeholder_tokens = set(diagnostics_config.get("placeholder_tokens", []))
 
+    for col in out.select_dtypes(include=["object", "string"]).columns:
+        cleaned = out[col].astype("string").str.strip()
+        out.loc[cleaned.isin(placeholder_tokens), col] = np.nan
+
     for col in diagnostics_config.get("numeric_text_columns", []):
         if col in out.columns:
-            out[col] = pd.to_numeric(out[col].replace(list(placeholder_tokens), np.nan), errors="coerce")
+            out[col] = pd.to_numeric(
+                out[col].replace(list(placeholder_tokens), np.nan),
+                errors="coerce"
+            )
 
     flag_invalid_values(out, diagnostics_config.get("validity_rules", {}))
-    out = _canonicalize_categories(out, diagnostics_config.get("canonical_categories", {}), placeholder_tokens)
+    out = _canonicalize_categories(
+        out,
+        diagnostics_config.get("canonical_categories", {}),
+        placeholder_tokens
+    )
 
-    columns_to_drop = [c for c in diagnostics_config.get("redundant_columns", []) if c in out.columns]
+    columns_to_drop = [
+        c for c in diagnostics_config.get("redundant_columns", [])
+        if c in out.columns
+    ]
+
     return out.drop(columns=columns_to_drop)
 
 

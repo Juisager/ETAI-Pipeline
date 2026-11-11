@@ -1,6 +1,7 @@
 data:
   name: "adult"
   path: "data/adult_train.csv"
+  prediction_path: "data/adult_new.csv"
   target: "income_over_50k"
   sensitive_attr: "sex"
   drop_columns: ["id", "fnlwgt", "education"] # kept in the data, never used as features
