@@ -40,6 +40,7 @@ def save_run(results_dir: str, run: str, config: dict, report_text: str) -> str:
         f"Tuning: {tuning_line}\n"
         f"Locked test set: size={config['test_set']['size']}  "
         f"random_state={config['test_set']['random_state']}  (not evaluated)\n"
+        f"evaluated={config["test_set"].get("evaluate", False)}\n"
         + "=" * 60 + "\n\n"
     )
 

@@ -9,6 +9,7 @@ data:
 test_set:
   size: 0.2
   random_state: 42
+  evaluate: false
 
 cv:
   n_splits: 5

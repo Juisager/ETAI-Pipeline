@@ -24,6 +24,21 @@ from src.evaluate import (build_scorers, cross_validate_pipeline, cv_report, oof
 from src.tuning import tune_pipeline, nested_cross_validate, tuning_report
 from src.results import save_run, save_scores
 
+import os
+import pandas as pd
+from sklearn.base import clone
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    fbeta_score,
+    roc_auc_score,
+    average_precision_score,
+    confusion_matrix,
+)
+
 
 def load_config(path: str = "config.yaml") -> dict:
     with open(path, "r") as f:
@@ -142,12 +157,85 @@ def main():
     report += "\n\n" + oof_classification_report(y_dev, oof_proba)
     report += "\n" + fairness_report(y_dev, oof_proba, extras_dev, sensitive_attr=config["data"]["sensitive_attr"], reference_pred=reference_pred, dataset_name=config["data"]["name"])
 
+    if config["test_set"].get("evaluate", False):
+        test_pipeline = clone(pipeline)
+        test_pipeline.fit(X_dev, y_dev)
+
+        test_proba = test_pipeline.predict_proba(X_test)[:, 1]
+        test_pred = (test_proba >= 0.5).astype(int)
+
+        test_results = {
+            "accuracy": accuracy_score(y_test, test_pred),
+            "balanced_accuracy": balanced_accuracy_score(y_test, test_pred),
+            "precision": precision_score(y_test, test_pred, zero_division=0),
+            "recall": recall_score(y_test, test_pred, zero_division=0),
+            "f1": f1_score(y_test, test_pred, zero_division=0),
+            "fbeta_2": fbeta_score(y_test, test_pred, beta=2, zero_division=0),
+            "roc_auc": roc_auc_score(y_test, test_proba),
+            "average_precision": average_precision_score(y_test, test_proba),
+        }
+
+        print("\nLOCKED TEST SET RESULTS")
+        for name, value in test_results.items():
+            print(f"  {name:<18s} {value:.3f}")
+
+        print("\nConfusion matrix:")
+        print(confusion_matrix(y_test, test_pred))
+
+        report += "\n\nLocked test set results (threshold=0.5):\n"
+        report += "\n".join(
+            f"{name}: {value:.3f}" for name, value in test_results.items()
+        )
+
     pipeline.fit(X_dev, y_dev)
     refit = f"Final model: {model_type} refit on all {len(X_dev)} development rows."
     if selection_enabled:
         all_features = pipeline.named_steps["prep"].get_feature_names_out()
         kept = pipeline.named_steps["select"].get_feature_names_out(all_features)
         refit += f"\nFeatures kept: {len(kept)} of {len(all_features)}: {', '.join(kept)}"
+
+    prediction_path = config["data"].get("prediction_path")
+
+    if prediction_path:
+        new_raw = load_data(prediction_path)
+        id_column = config["diagnostics"].get("id_column")
+
+        if not id_column or id_column not in new_raw.columns:
+            raise ValueError("The prediction dataset must contain the configured ID column.")
+
+        new_ids = new_raw[id_column].copy()
+
+        new_clean = clean_dataset(new_raw, config["diagnostics"])
+        new_clean = add_engineered_features(new_clean)
+
+        X_new, _, _ = split_features_target(
+            new_clean, config["data"], mnar_sources
+        )
+
+        new_proba = pipeline.predict_proba(X_new)[:, 1]
+        new_pred = (new_proba >= 0.5).astype(int)
+
+        predictions = pd.DataFrame({
+            id_column: new_ids.to_numpy(),
+            "probability": new_proba,
+            "prediction": new_pred,
+        })
+
+        if len(predictions) != len(new_raw):
+            raise ValueError("Prediction row count does not match input row count.")
+
+        output_path = config.get("output", {}).get(
+            "predictions_path", "results/predictions.csv"
+        )
+        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+        predictions.to_csv(output_path, index=False)
+
+        print(f"\nPredictions saved to: {output_path}")
+        print(f"Rows predicted: {len(predictions)}")
+
+        refit += f"\nPredictions saved to: {output_path}"
+        refit += f"\nNumber of predictions: {len(predictions)}"
+
     report += "\n" + refit + "\n"
 
     row = {"run": run, "data": config["data"]["path"], "model": model_type, "tuned": tuning_enabled,
