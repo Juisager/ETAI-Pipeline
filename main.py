@@ -10,6 +10,7 @@ model) on the development set (several metrics, and the no-model floor on the sa
 import shutil
 import tempfile
 from datetime import datetime
+import argparse
 
 import optuna
 import yaml
@@ -30,7 +31,16 @@ def load_config(path: str = "config.yaml") -> dict:
 
 
 def main():
-    config = load_config()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config",
+        default="config.yaml",
+        help="Path to the configuration file"
+    )
+    args = parser.parse_args()
+
+    config = load_config(args.config)
+
     run = datetime.now().strftime("%Y%m%d_%H%M%S")
     model_type = config["model"]["type"]
 
@@ -114,11 +124,23 @@ def main():
                   else f"    {name.replace('model__', ''):<20s} {value}")
         report += "\n\n" + tuning_report(study, final_scores, selection_metric)
 
+    reference_pred = None
+
+    if "score_text" in extras.columns:
+        reference_pred = (
+            extras["score_text"]
+            .astype(str)
+            .str.strip()
+            .str.lower()
+            .ne("low")
+            .astype(int)
+        )
+
     print(f"\nAll metrics ({'tuned model' if tuning_enabled else 'default hyperparameters'}, mean ± std)")
     for name in metrics:
         print(f"  {name:<18s} {final_scores[name].mean():.3f} ± {final_scores[name].std(ddof=1):.3f}")
     report += "\n\n" + oof_classification_report(y_dev, oof_proba)
-    report += "\n" + fairness_report(y_dev, oof_proba, extras_dev, sensitive_attr=config["data"]["sensitive_attr"])
+    report += "\n" + fairness_report(y_dev, oof_proba, extras_dev, sensitive_attr=config["data"]["sensitive_attr"], reference_pred=reference_pred)
 
     pipeline.fit(X_dev, y_dev)
     refit = f"Final model: {model_type} refit on all {len(X_dev)} development rows."
