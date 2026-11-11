@@ -1,4 +1,5 @@
 data:
+  name: "compas"
   path: "data/compas_two_year_recidivism.csv"
   target: "two_year_recid"
   sensitive_attr: "race"                            # never a feature; used only for the fairness report

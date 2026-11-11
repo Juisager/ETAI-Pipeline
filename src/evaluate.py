@@ -92,7 +92,7 @@ def oof_classification_report(y_true, oof_proba, threshold: float = 0.5) -> str:
 
 
 def fairness_report(y_true, oof_proba, extras: pd.DataFrame, sensitive_attr: str = "race",
-                    threshold: float = 0.5, reference_pred= None) -> str:
+                    threshold: float = 0.5, reference_pred= None, dataset_name: str = "Dataset") -> str:
     """
     False positive rate (share of people who did not reoffend but were predicted to) per
     group of `sensitive_attr`, for the model's out-of-fold predictions and for COMPAS's own
@@ -118,6 +118,7 @@ def fairness_report(y_true, oof_proba, extras: pd.DataFrame, sensitive_attr: str
         ]
 
     lines = [
+        f"Fairness check on {dataset_name}",
         f"False positive rate by {sensitive_attr} "
         "(development set, out-of-fold)",
         "(share of people in the negative class who were predicted positive)",

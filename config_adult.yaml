@@ -1,4 +1,5 @@
 data:
+  name: "adult"
   path: "data/adult_train.csv"
   target: "income_over_50k"
   sensitive_attr: "sex"
@@ -131,5 +132,5 @@ tuning:
       model__C: {type: float, low: 0.001, high: 100.0, log: true}
 
 output:
-  results_dir: "results"
-  scoreboard: "results/runs.csv"                    # one row per run; delete it when the data, cleaning or folds change
+  results_dir: "results/adult"
+  scoreboard: "results/adult/scoreboard.csv"                   # one row per run; delete it when the data, cleaning or folds change
