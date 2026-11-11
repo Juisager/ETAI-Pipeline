@@ -126,4 +126,4 @@ tuning:
 output:
   results_dir: "results/adult"
   scoreboard: "results/adult/scoreboard.csv"   
-  predictions_path: "results/adult/adult_predictions.csv"                # one row per run; delete it when the data, cleaning or folds change
+  predictions_path: "adult_predictions.csv"                # one row per run; delete it when the data, cleaning or folds change

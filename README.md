@@ -76,6 +76,7 @@ This table is updated after each practical class, so you can always see what cha
 | 6 | Ensembles in depth: random forest, oblique random forest, AdaBoost | Two new model types in `src/model.py`: `oblique_random_forest` (a forest of oblique trees built from scikit-learn parts -- every tree splits on its own random sparse linear combinations of the features, via `SparseRandomProjection` inside `BaggingClassifier`) and `adaboost` (AdaBoost over decision trees of a chosen depth; stumps by default), both registered in `_MODELS`; the random forest is now the model `main.py` runs (200 trees, all CPU cores); `config.yaml` gains search spaces for the three ensembles -- the forests tune tree size (`max_depth`, `min_samples_leaf`) and decorrelation (`max_features` / number of combinations) but not the number of trees, AdaBoost tunes its base trees' depth, its number of rounds and its learning rate; `corrected_paired_test()` in `src/evaluate.py` compares two models scored on the same folds (Nadeau & Bengio's corrected paired t-test), so a "winner" is only called when the difference is bigger than fold-to-fold noise; `scipy` listed in `requirements.txt` (it already came with scikit-learn, so nothing new to install) -- see "Ensembles" below |
 | 7 | Gradient boosting + evaluating with probabilities | Three new model types in `src/model.py`: `gradient_boosting` (scikit-learn's `GradientBoostingClassifier`: each shallow tree fits the gradient of the log-loss left by the trees before it), `hist_gradient_boosting` (the same idea on binned features: much faster on large data, and it handles missing values itself) and `naive_bayes` (`GaussianNB`, a fast probabilistic baseline); gradient boosting is now the model `main.py` runs, each with its search space in `config.yaml`; evaluation now reports **several metrics** (accuracy, balanced accuracy, precision, recall, F1, F-beta, ROC-AUC, PR-AUC) and one **selection metric** (`cv.selection_metric`, ROC-AUC) that tuning maximises and runs are ranked by; out-of-fold **probabilities** (not just labels) feed the reports, with a confusion matrix; `class_weight: balanced` in the commented examples of the models that support it; new `save_scores()` in `src/results.py`: every run adds a row to `results/runs.csv` (the model and its settings, the score on each fold, the no-model floor and the untuned score on the same folds), so any two runs on the same data and folds can be compared with `corrected_paired_test()`; the printed output was reorganised to be easier to read, with the full tables in the results file (optional: keep your own format if you prefer) -- see "Model evaluation" below |
 | 8 | XGBoost + feature selection | New model type `xgboost` (`XGBClassifier`, from the `xgboost` package: gradient boosting with extra regularisation, multi-threaded, handles missing values itself), now the model `main.py` runs, with its search space in `config.yaml`; **feature selection** as a learned step of the Pipeline: new `VoteSelector` class in `src/model.py` (a random forest, gradient boosting and an L1 logistic regression vote; features with at least `min_votes` votes are kept), placed between `"prep"` and `"model"` by `build_pipeline()` when the new `feature_selection` section of `config.yaml` switches it on, so it is re-fitted on the training rows of every fold (never on the rows it is scored on); with tuning on, `select__min_votes` is tuned with the model and assessed by nested CV; the pipeline caches fitted preprocessing and selection steps during a run (`Pipeline(memory=...)`, a temporary folder deleted at the end), so tuning doesn't refit them in every trial; the final model's kept features are printed, and the scoreboard records the selection setting -- see "Feature selection" below |
+| 9 | Beyond COMPAS | The pipeline is no longer tied to COMPAS: main.py accepts a configuration-file path through --config (defaulting to config.yaml), allowing the original COMPAS setup and the new Adult Income setup to run through the same code; config_adult.yaml defines the Adult dataset, target, sensitive attribute, columns to exclude, diagnostics, preprocessing, model and output settings; COMPAS-specific feature engineering is now conditional on the required columns being present, so it is skipped automatically for Adult; the shared cleaning and feature-splitting functions are reused, keeping preprocessing consistent between training and prediction; the Adult workflow evaluates the selected model once on the previously locked 20% test set, then refits the pipeline on all labelled rows before predicting the 2,000 unlabelled records in adult_new.csv; This prediction stage is activated only when prediction_path is defined in the configuration, so COMPAS does not need a prediction file or any prediction-specific configuration.
 
 ## Preprocessing decisions
 
@@ -277,3 +278,75 @@ See `data/README.md`.
 For a detailed overview of the experiments, model comparisons, cross-validation results, and fairness evaluation, see [Results and Analysis](RESULTS.md).
 
 This document tracks the project's progress across different weeks and discusses model performance, generalisation, and the main findings from each experiment.
+
+
+## Beyond COMPAS: Adapting the Pipeline to Adult Income
+
+### Running the Adult Configuration
+
+The pipeline was extended to support a second dataset, Adult Income, without compromising its compatibility with COMPAS. Instead of maintaining separate implementations, `main.py` now accepts a configuration file through the `--config` argument. The default remains `config.yaml`, so the original COMPAS workflow is unchanged. The Adult pipeline can be executed with:
+
+```bash
+python main.py --config config_adult.yaml
+```
+
+The new `config_adult.yaml` specifies the Adult dataset, its target variable (`income_over_50k`), sensitive attribute (`sex`), columns to exclude, preprocessing settings, model configuration and output paths. Dataset-specific behaviour is controlled through the configuration rather than hard-coded into the main pipeline.
+
+### Issues Found and Fixes
+
+Adapting the pipeline revealed several assumptions that were specific to COMPAS or to the original dataset structure.
+
+| Issue | Why it occurred | Solution |
+|---|---|---|
+| `main.py` only supported the COMPAS configuration | The original implementation loaded `config.yaml` directly, assuming it was the only configuration file used by the pipeline. This prevented the same code from being executed with dataset-specific settings for Adult Income. | Added command-line argument support using `argparse`, allowing users to specify a configuration file with `--config`. The default remains `config.yaml`, preserving compatibility with the original COMPAS workflow. |
+| Dataset-specific feature engineering | The original pipeline included COMPAS-specific variables and transformations that are not present in Adult Income. | Made the feature engineering conditional on the required columns being available, allowing the Adult dataset to pass through without applying irrelevant transformations. |
+| Missing values represented by `?` | Adult uses `?` as a missing-value marker in categorical columns, rather than standard `NaN` values. | Extended the generic cleaning procedure to recognise `?` as a placeholder and convert it into a proper missing value, allowing the configured imputation strategies and missingness indicators to work correctly. |
+| Dataset-specific columns and target | The original pipeline assumed COMPAS column names and target-related information. | Moved dataset-specific settings into `config_adult.yaml`, including the target, sensitive attribute and columns to exclude from modelling. |
+| Identifier and duplicate handling | Prediction records must retain their original identifiers, and every input row must receive a prediction, including duplicate records. | Kept the identifier separately for the output and reused the cleaning and feature-splitting procedures without applying training-only duplicate removal to prediction data. |
+| Prediction data has no target | The unlabelled Adult prediction dataset cannot follow the same target-dependent evaluation workflow as the training data. | Added an optional prediction stage, activated only when a `prediction_path` is provided in the configuration. This keeps the COMPAS workflow independent of the Adult prediction file. |
+
+
+### Model Comparison and Final Selection
+
+The Adult dataset contains 6,000 labelled observations. A stratified 20% test set (1,200 observations) was reserved, leaving 4,800 observations for model development and cross-validation. Model selection was therefore performed using the development data, while the test set remained separate from the cross-validation and tuning procedures.
+
+The following table summarises the main XGBoost baseline results obtained with feature selection disabled:
+
+| Model configuration | Accuracy | Balanced accuracy | Precision | Recall | F1-score | ROC-AUC | Average precision |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| XGBoost, default parameters, no feature selection (test model) | 0.857 ± 0.017 | 0.767 ± 0.028 | 0.758 ± 0.038 | 0.593 ± 0.050 | 0.665 ± 0.045 | 0.906 ± 0.017 | 0.788 ± 0.030 |
+| XGBoost, default parameters, feature selection enabled | **0.864 ± 0.011** | **0.781 ± 0.021** | **0.766 ± 0.035** | **0.622 ± 0.046** | **0.686 ± 0.030** | **0.913 ± 0.016** | **0.805 ± 0.027** |
+| XGBoost, tuned parameters, feature selection enabled | 0.855 ± 0.011 | 0.769 ± 0.026 | 0.745 ± 0.035 | 0.603 ± 0.059 | 0.665 ± 0.036 | 0.908 ± 0.016 | 0.792 ± 0.030 |
+| Logistic Regression, tuned parameters, feature selection enabled | 0.801 ± 0.018 | 0.810 ± 0.021 | 0.556 ± 0.026 | 0.829 ± 0.031 | 0.666 ± 0.027 | 0.895 ± 0.014 | 0.745 ± 0.026 |
+| HistGradientBoosting, default parameters, feature selection enabled | 0.824 ± 0.014 | 0.816 ± 0.018 | 0.600 ± 0.023 | 0.801 ± 0.029 | 0.686 ± 0.024 | 0.905 ± 0.017 | 0.790 ± 0.026 |
+| HistGradientBoosting, tuned parameters, feature selection enabled | 0.818 ± 0.017 | 0.819 ± 0.026 | 0.586 ± 0.028 | 0.822 ± 0.061 | 0.683 ± 0.029 | 0.905 ± 0.019 | 0.789 ± 0.031 |
+| GradientBoosting, default parameters, feature selection enabled | 0.862 ± 0.011 | 0.774 ± 0.025 | 0.769 ± 0.029 | 0.606 ± 0.054 | 0.676 ± 0.036 | 0.912 ± 0.016 | 0.800 ± 0.031 |
+| GradientBoosting, tuned parameters, feature selection enabled | 0.859 ± 0.015 | 0.778 ± 0.030 | 0.745 ± 0.038 | 0.623 ± 0.063 | 0.677 ± 0.043 | 0.907 ± 0.017 | 0.789 ± 0.034 |
+| AdaBoost, default parameters, feature selection enabled | 0.850 ± 0.016 | 0.762 ± 0.033 | 0.731 ± 0.037 | 0.593 ± 0.069 | 0.653 ± 0.049 | 0.903 ± 0.016 | 0.776 ± 0.027 |
+| AdaBoost, tuned parameters, feature selection enabled | 0.857 ± 0.010 | 0.766 ± 0.026 | 0.762 ± 0.020 | 0.589 ± 0.058 | 0.663 ± 0.037 | 0.905 ± 0.016 | 0.787 ± 0.025 |
+| Oblique Random Forest, default parameters, feature selection enabled | 0.854 ± 0.014 | 0.764 ± 0.020 | 0.744 ± 0.040 | 0.593 ± 0.035 | 0.659 ± 0.033 | 0.896 ± 0.016 | 0.775 ± 0.027 |
+| Oblique Random Forest, tuned parameters, feature selection enabled | 0.856 ± 0.010 | 0.759 ± 0.021 | 0.768 ± 0.029 | 0.574 ± 0.047 | 0.656 ± 0.031 | 0.900 ± 0.013 | 0.783 ± 0.024 |
+| Random Forest, default parameters, feature selection enabled | 0.827 ± 0.011 | 0.794 ± 0.017 | 0.617 ± 0.019 | 0.730 ± 0.031 | 0.668 ± 0.022 | 0.891 ± 0.015 | 0.749 ± 0.026 |
+| Random Forest, tuned parameters, feature selection enabled | 0.812 ± 0.013 | 0.815 ± 0.019 | 0.575 ± 0.019 | 0.821 ± 0.035 | 0.676 ± 0.022 | 0.902 ± 0.017 | 0.772 ± 0.034 |
+| Decision Tree, tuned parameters, feature selection enabled | 0.775 ± 0.012 | 0.776 ± 0.025 | 0.520 ± 0.016 | 0.779 ± 0.069 | 0.623 ± 0.024 | 0.833 ± 0.036 | 0.610 ± 0.064 |
+| Naive Bayes, tuned parameters, feature selection enabled | 0.818 ± 0.007 | 0.671 ± 0.013 | 0.723 ± 0.027 | 0.390 ± 0.027 | 0.506 ± 0.025 | 0.885 ± 0.014 | 0.714 ± 0.021 |
+
+The final configuration selected was **XGBoost with feature selection enabled and hyperparameter tuning disabled**. This configuration was chosen based on the assignment's target-score requirements and the comparison between the evaluated alternatives. Another reason that model was chosen was that most of the models that achieved a good f1-score and acceptable ROC-AUC, didn't reach the requirement for the accuracy, which made them invalid to use, for example Hist Gradient Boosting.
+
+Feature selection was implemented through `VoteSelector`, which combines the feature importance assessments of a Random Forest, Gradient Boosting and L1-regularised Logistic Regression. Features receiving at least the configured minimum number of votes are retained. Since selection is part of the pipeline, it is fitted independently within each cross-validation fold, avoiding information leakage.
+
+**Features retained by the final model:**
+
+numeric__age, numeric__education_num, numeric__capital_gain, numeric__capital_loss, numeric__hours_per_week, categorical__marital_status, categorical__occupation, categorical__relationship
+
+### Predictions on Unlabelled Data
+
+After evaluating the selected configuration, the pipeline was refitted using all 6,000 labelled Adult observations. It was then applied to `adult_new.csv`, which contains 2,000 unlabelled records.
+
+The prediction workflow applies the same cleaning, feature engineering and feature-splitting procedures used during training. However, duplicate removal is deliberately skipped so that the number and order of prediction records remain unchanged. The resulting CSV contains the original `id`, the predicted probability of earning more than $50,000 and the corresponding binary prediction (0 or 1).
+
+The resulting file is saved as `adult_predictions.csv` and contains exactly 2,000 predictions. This functionality is optional and is only executed when a prediction file is specified in the configuration; therefore, it does not introduce an additional requirement for COMPAS.
+
+### Lessons Learned
+
+The hardest assumption to identify was that missing values were represented consistently across datasets. In COMPAS, missing values were generally represented using standard missing-value markers, whereas Adult used `?` in several categorical columns. Without explicitly recognising this representation, the pipeline would treat missing values as a legitimate category, preventing the intended imputation and missingness handling. The most important change was therefore to make data cleaning generic and configurable, rather than relying on the original dataset's conventions. Reusing the same preprocessing and modelling pipeline, while keeping dataset-specific decisions in configuration files, made it possible to extend the project to Adult Income without duplicating the original COMPAS implementation.
