@@ -135,3 +135,30 @@ The **Logistic Regression** model achieved the best overall performance, with a 
 **Is Feature Selection Worth It?**
 
 The two tuned XGBoost runs achieved similar performance: feature selection (min_votes=3) obtained an F1-score of 0.613 ± 0.014, compared with 0.622 ± 0.014 without feature selection. The corrected paired test found no statistically significant difference (\(t=-1.554\), \(p=0.195\)), despite the model without feature selection performing better in all five folds. Therefore, the smaller model can be considered statistically comparable to the model without selection. I would keep feature selection enabled, as it reduces the number of features while maintaining comparable predictive performance, resulting in a simpler and potentially more efficient model.
+
+## Week 10 (18/11) - Imputer + Deployment
+
+After feature selection, the best model was **Logistic Regression**, so in order to evaluate the imputation, that was the model that was chosen for the comparison. These are the results:
+
+| Model | Imputer | F1-score |
+|---|---|---:|
+| Logistic Regression | Median | **0.635 ± 0.009** |
+| Logistic Regression | Mean | 0.634 ± 0.012 |
+| Logistic Regression | KNN | 0.628 ± 0.012 |
+| Logistic Regression | Iterative | 0.631 ± 0.012 |
+| Logistic Regression | Random Forest | 0.633 ± 0.014 |
+
+
+As the median imputer was the one with the highest f1-score, I proceeded to do the test with Logistic regression, using feature selection with 2 minimum votes, median imputer and 5 folds in the tuning. These were the training results:
+
+| Model | Imputer | Default: CV F1 mean ± std (gap) | Tuned: nested CV F1 mean ± std | Tuning score (best trial) | Chosen hyperparameters |
+|---|---|---|---|---|---|
+| Logistic Regression | Median | 0.635 ± 0.009 (+0.004) | **0.642 ± 0.009** | 0.642 | `C=0.07459, min_votes=3` |
+
+The results after testing are in the *predictions.csv* file. It contains 20 lines with the person id, the probability and the prediction. To obtain the file it should be run *python predict.py data/compas_new_people.csv predictions.csv* in the terminal.
+
+**Which imputer should we keep?**
+
+Median imputation achieved the highest F1-score (0.635), although the differences compared with the other imputation strategies were small. The corrected paired tests showed no statistically significant differences against median imputation (all p-values above 0.05), with median winning in 2/5 folds against mean and Random Forest, 1/5 against KNN and Iterative. Therefore, we keep median imputation because it achieved the best overall F1-score and the alternative strategies did not demonstrate a statistically significant improvement.
+
+

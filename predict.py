@@ -12,12 +12,13 @@ import joblib
 import pandas as pd
 import yaml
 
-from src.preprocessing import clean_dataset, split_features_target
+from src.preprocessing import clean_dataset, split_features_target, add_engineered_features
 
 
 def predict(df: pd.DataFrame, pipeline, config: dict) -> pd.DataFrame:
     """Returns the id, the probability of the positive class and the prediction (at 0.5) for every row."""
     clean = clean_dataset(df, config["diagnostics"])
+    clean = add_engineered_features(clean)
     X, _, _ = split_features_target(clean, config["data"], config["preprocessing"]["mnar_indicator_sources"])
     probability = pipeline.predict_proba(X)[:, 1]
     return pd.DataFrame({"id": df[config["diagnostics"]["id_column"]],
