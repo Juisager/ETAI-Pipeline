@@ -80,6 +80,7 @@ This table is updated after each practical class, so you can always see what cha
 | 8 | XGBoost + feature selection | New model type `xgboost` (`XGBClassifier`, from the `xgboost` package: gradient boosting with extra regularisation, multi-threaded, handles missing values itself), now the model `main.py` runs, with its search space in `config.yaml`; **feature selection** as a learned step of the Pipeline: new `VoteSelector` class in `src/model.py` (a random forest, gradient boosting and an L1 logistic regression vote; features with at least `min_votes` votes are kept), placed between `"prep"` and `"model"` by `build_pipeline()` when the new `feature_selection` section of `config.yaml` switches it on, so it is re-fitted on the training rows of every fold (never on the rows it is scored on); with tuning on, `select__min_votes` is tuned with the model and assessed by nested CV; the pipeline caches fitted preprocessing and selection steps during a run (`Pipeline(memory=...)`, a temporary folder deleted at the end), so tuning doesn't refit them in every trial; the final model's kept features are printed, and the scoreboard records the selection setting -- see "Feature selection" below |
 | 9 | Beyond COMPAS | The pipeline is no longer tied to COMPAS: main.py accepts a configuration-file path through --config (defaulting to config.yaml), allowing the original COMPAS setup and the new Adult Income setup to run through the same code; config_adult.yaml defines the Adult dataset, target, sensitive attribute, columns to exclude, diagnostics, preprocessing, model and output settings; COMPAS-specific feature engineering is now conditional on the required columns being present, so it is skipped automatically for Adult; the shared cleaning and feature-splitting functions are reused, keeping preprocessing consistent between training and prediction; the Adult workflow evaluates the selected model once on the previously locked 20% test set, then refits the pipeline on all labelled rows before predicting the 2,000 unlabelled records in adult_new.csv; This prediction stage is activated only when prediction_path is defined in the configuration, so COMPAS does not need a prediction file or any prediction-specific configuration.
 | 10 | Missing values + a deployable pipeline | The numeric imputer is a config choice (`preprocessing.imputation.numeric_strategy`): `median`, `mean`, `knn` (`KNNImputer`), `iterative` (MICE with one completed dataset, `IterativeImputer`) or `random_forest` (the missForest idea: `IterativeImputer` with a random forest per column); the numeric columns are now scaled **before** they are imputed (scalers ignore gaps when fitting, and KNN needs one scale); none of the imputers looks at the target, so they also run on new data; the runs table and report record the imputer; `main.py` **saves the final fitted pipeline** to `models/model.joblib`; new **`predict.py`**: `python predict.py new.csv predictions.csv` cleans the file with the same rules (no rows dropped) and writes one row per input row (id, probability, prediction); `data/compas_new_people.csv` to try it -- see "Missing values" and "Predicting new data" below |
+| 11 | Outliers and anomaly detection | New `AnomalyScore` class in `src/preprocessing.py`: an Isolation Forest or a Local Outlier Factor (`novelty=True`, so it can score new rows) fitted on the training rows of each fold, which appends an `anomaly_score` column (higher = more unusual) to the preprocessed features; `build_pipeline()` places it right after `"prep"` (before feature selection, which can keep or drop it) when the new `anomaly` section of `config.yaml` sets `method` to `isolation_forest` or `lof` (`none` by default); the runs table, the printed header and the report record the anomaly method; nothing changes in `predict.py`: the saved Pipeline already contains the fitted detector -- see "Anomaly scores" below |
 
 ## Preprocessing decisions
 
@@ -160,9 +161,23 @@ Gaps in categorical columns are filled with the most frequent value. For numeric
 
 All of them are fitted on the training rows of each fold, inside the Pipeline, and none uses the target, so the same imputer runs on new data in `predict.py`. They only see the numeric columns. The `<col>_was_missing` flags (`mnar_indicator_sources`) keep the fact that a value was missing, for the columns where that is informative.
 
+## Anomaly scores
+
+Values that break a domain rule are **invalid** and become gaps (`diagnostics.validity_rules`). An **anomaly** is different: a row whose *combination* of values is unusual (e.g. very young with many priors), even when each value is valid. Anomalies are real people, so they are not deleted (a deployed model can't delete a person either). Instead, the pipeline can add how unusual each row is as an extra feature:
+
+| `anomaly.method` | Score | Notes |
+|---|---|---|
+| `none` | -- | default |
+| `isolation_forest` | the theory's s(x): about 0.5 for ordinary rows, close to 1 for anomalies | no scaling needed, fast |
+| `lof` | the Local Outlier Factor: about 1 for ordinary rows, well above 1 for anomalies | distance-based, so it runs after scaling; `n_neighbors` must be larger than the largest group of identical rows, or the score explodes |
+
+The detector is fitted on the training rows of each fold, inside the Pipeline, and doesn't use the target, so it runs unchanged on new data. `contamination` isn't used: it only moves the yes/no cut, and the pipeline keeps the score itself.
+
+**Comparing runs:** the scoreboard ranks every run on the same data, whatever its preprocessing. To measure what one setting adds (an imputer, an anomaly method, feature selection), compare two runs that differ only in that setting.
+
 ## Predicting new data
 
-At the end of every run, `main.py` saves the final model (the whole fitted Pipeline: imputers, encoders, selected features and model, refit on all development rows) to `models/model.joblib` (`output.model_path` in `config.yaml`; each run overwrites it). To predict a CSV with the same columns as the training data (the target isn't needed):
+At the end of every run, `main.py` saves the final model (the whole fitted Pipeline: imputers, encoders, the anomaly detector if any, selected features and model, refit on all development rows) to `models/model.joblib` (`output.model_path` in `config.yaml`; each run overwrites it). To predict a CSV with the same columns as the training data (the target isn't needed):
 ```bash
 python predict.py data/compas_new_people.csv predictions.csv
 ```
