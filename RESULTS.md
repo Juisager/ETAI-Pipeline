@@ -168,5 +168,14 @@ Median imputation achieved the highest F1-score (0.635), although the difference
 
 Outliers can introduce bias to models and impact negatively their predictions, so it is expected that the outlier detection improve the model. The outliers will probably be young people that have a high value of priors, so not all reoffenders will be outliers.
 
+**Results**
 
+| Model | Outlier detection method | Default: CV F1 mean ± std (gap) | Tuned: nested CV F1 mean ± std | Tuning score (best trial) | Chosen hyperparameters |
+|---|---|---|---|---|---|
+| Logistic Regression | None | 0.635 ± 0.009 (+0.004) | 0.639 ± 0.007 | 0.642 | `C=0.07459, min_votes=3` |
+| Logistic Regression | LOF | 0.636 ± 0.010 (+0.000) | 0.638 ± 0.008 | 0.642 | `C=0.07459, min_votes=3` |
+| Logistic Regression | Isolation Forest | 0.633 ± 0.010 (+0.005) | 0.642 ± 0.009 | 0.642 | `C=0.07459, min_votes=3` |
 
+**Observations**
+
+My guess was only partially correct, as the outlier detection methods did not consistently improve the model's performance. Isolation Forest achieved the best tuned F1-score (0.642 ± 0.009), slightly outperforming the model without outlier detection (0.639 ± 0.007), while LOF performed slightly worse (0.638 ± 0.008). Overall, the anomaly scores had a limited impact on performance, suggesting that the detected outliers may contain useful information for predicting reoffending rather than being purely noise that should be removed.
