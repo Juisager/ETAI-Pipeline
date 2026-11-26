@@ -162,3 +162,11 @@ The results after testing are in the *predictions.csv* file. It contains 20 line
 Median imputation achieved the highest F1-score (0.635), although the differences compared with the other imputation strategies were small. The corrected paired tests showed no statistically significant differences against median imputation (all p-values above 0.05), with median winning in 2/5 folds against mean and Random Forest, 1/5 against KNN and Iterative. Therefore, we keep median imputation because it achieved the best overall F1-score and the alternative strategies did not demonstrate a statistically significant improvement.
 
 
+## Week 11 (25/11) - Outlier Detection
+
+**Before Running**
+
+Outliers can introduce bias to models and impact negatively their predictions, so it is expected that the outlier detection improve the model. The outliers will probably be young people that have a high value of priors, so not all reoffenders will be outliers.
+
+
+
